@@ -33,6 +33,7 @@ case object TLDataBits extends Field[Int]
 case object TLDataBeats extends Field[Int]
 /** Whether the underlying physical network preserved point-to-point ordering of messages */
 case object TLNetworkIsOrderedP2P extends Field[Boolean]
+case object TLNNodes extends Field[Int]
 
 /** Utility trait for building Modules and Bundles that use TileLink parameters */
 trait TileLinkParameters extends UsesParameters {
@@ -67,6 +68,7 @@ trait TileLinkParameters extends UsesParameters {
                               tlCoh.grantTypeWidth) + 1
   val tlNetworkPreservesPointToPointOrdering = params(TLNetworkIsOrderedP2P)
   val tlNetworkDoesNotInterleaveBeats = true
+  val tlNNodes = params(TLNNodes)
   val amoAluOperandBits = params(AmoAluOperandBits)
 }
 
@@ -1236,4 +1238,14 @@ trait HasDataBeatCounters {
             Mux(do_inc, cnt + UInt(1), cnt))
     (cnt > UInt(0), up_idx, up_done, down_idx, down_done)
   }
+}
+
+class MasterUncachedTileLinkIO extends TLBundle {
+  val acquire = new DecoupledIO(new PhysicalNetworkIO(tlNNodes, new Acquire))
+  val grant = new DecoupledIO(new PhysicalNetworkIO(tlNNodes, new Grant)).flip
+}
+
+class TileLinkNetworkIO extends TLBundle {
+  val tx = new MasterUncachedTileLinkIO
+  val rx = new MasterUncachedTileLinkIO().flip
 }
