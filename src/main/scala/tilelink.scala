@@ -68,7 +68,6 @@ trait TileLinkParameters extends UsesParameters {
                               tlCoh.grantTypeWidth) + 1
   val tlNetworkPreservesPointToPointOrdering = params(TLNetworkIsOrderedP2P)
   val tlNetworkDoesNotInterleaveBeats = true
-  val tlNNodes = params(TLNNodes)
   val amoAluOperandBits = params(AmoAluOperandBits)
 }
 
@@ -1241,8 +1240,8 @@ trait HasDataBeatCounters {
 }
 
 class MasterUncachedTileLinkIO extends TLBundle {
-  val acquire = new DecoupledIO(new PhysicalNetworkIO(tlNNodes, new Acquire))
-  val grant = new DecoupledIO(new PhysicalNetworkIO(tlNNodes, new Grant)).flip
+  val acquire = new DecoupledIO(new LogicalNetworkIO(new Acquire))
+  val grant = new DecoupledIO(new LogicalNetworkIO(new Grant)).flip
 }
 
 class TileLinkNetworkIO extends TLBundle {
