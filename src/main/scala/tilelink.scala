@@ -33,7 +33,6 @@ case object TLDataBits extends Field[Int]
 case object TLDataBeats extends Field[Int]
 /** Whether the underlying physical network preserved point-to-point ordering of messages */
 case object TLNetworkIsOrderedP2P extends Field[Boolean]
-case object TLNNodes extends Field[Int]
 
 /** Utility trait for building Modules and Bundles that use TileLink parameters */
 trait TileLinkParameters extends UsesParameters {
