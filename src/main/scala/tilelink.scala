@@ -234,7 +234,7 @@ class AcquireFromSrc extends Acquire with HasClientId
   * @param union additional fields used for uncached types
   */
 object Acquire {
-  val nBuiltInTypes = 5
+  val nBuiltInTypes = 6
   //TODO: Use Enum
   def getType       = UInt("b000") // Get a single beat of data
   def getBlockType  = UInt("b001") // Get a whole block of data
@@ -637,12 +637,13 @@ class GrantToDst extends Grant with HasClientId
   * @param data data being refilled to the original requestor
   */
 object Grant {
-  val nBuiltInTypes = 5
+  val nBuiltInTypes = 7
   def voluntaryAckType = UInt("b000") // For acking Releases
   def prefetchAckType  = UInt("b001") // For acking any kind of Prefetch
   def putAckType       = UInt("b011") // For acking any kind of non-prfetch Put
   def getDataBeatType  = UInt("b100") // Supplying a single beat of Get
   def getDataBlockType = UInt("b101") // Supplying all beats of a GetBlock
+  def nackType         = UInt("b110") // Indicate an error handling the Acquire
   def typesWithData = Vec(getDataBlockType, getDataBeatType)
   def typesWithMultibeatData= Vec(getDataBlockType)
 
