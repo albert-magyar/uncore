@@ -6,6 +6,9 @@ import Chisel._
 case object LNEndpoints extends Field[Int]
 case object LNHeaderBits extends Field[Int]
 
+case object RNPortBits extends Field[Int]
+case object RNAddrBits extends Field[Int]
+
 class PhysicalHeader(n: Int) extends Bundle {
   val src = UInt(width = log2Up(n))
   val dst = UInt(width = log2Up(n))
@@ -54,6 +57,23 @@ class LogicalNetworkIO[T <: Data](dType: T) extends Bundle {
   val header = new LogicalHeader
   val payload = dType.clone
   override def clone = { new LogicalNetworkIO(dType).asInstanceOf[this.type] }
+}
+
+class RemoteAddress extends Bundle {
+  val addr = UInt(width = params(RNAddrBits))
+  val port = UInt(width = params(RNPortBits))
+}
+
+class RemoteHeader extends Bundle {
+  val src = new RemoteAddress
+  val dst = new RemoteAddress
+}
+
+class RemoteNetworkIO[T <: Data](dType: T) extends Bundle {
+  val header = new RemoteHeader
+  val payload = dType.clone
+  val last = Bool()
+  override def clone = new RemoteNetworkIO(dType).asInstanceOf[this.type]
 }
 
 object DecoupledLogicalNetworkIOWrapper {

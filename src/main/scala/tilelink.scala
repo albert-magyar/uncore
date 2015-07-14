@@ -1239,12 +1239,12 @@ trait HasDataBeatCounters {
   }
 }
 
-class MasterUncachedTileLinkIO extends TLBundle {
-  val acquire = new DecoupledIO(new LogicalNetworkIO(new Acquire))
-  val grant = new DecoupledIO(new LogicalNetworkIO(new Grant)).flip
+class RemoteTileLinkIO extends TLBundle {
+  val acquire = new DecoupledIO(new RemoteNetworkIO(new Acquire))
+  val grant = new DecoupledIO(new RemoteNetworkIO(new Grant)).flip
 }
 
 class TileLinkNetworkIO extends TLBundle {
-  val tx = new MasterUncachedTileLinkIO
-  val rx = new MasterUncachedTileLinkIO().flip
+  val tx = new RemoteTileLinkIO
+  val rx = new RemoteTileLinkIO().flip
 }
