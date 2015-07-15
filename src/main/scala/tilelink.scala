@@ -211,7 +211,8 @@ class Acquire extends ClientToManagerChannel
       Acquire.putType       -> Grant.putAckType,
       Acquire.putBlockType  -> Grant.putAckType,
       Acquire.putAtomicType -> Grant.getDataBeatType,
-      Acquire.prefetchType  -> Grant.prefetchAckType))
+      Acquire.prefetchType  -> Grant.prefetchAckType,
+      Acquire.immediateType -> Grant.putAckType))
   }
 }
 
@@ -234,7 +235,7 @@ class AcquireFromSrc extends Acquire with HasClientId
   * @param union additional fields used for uncached types
   */
 object Acquire {
-  val nBuiltInTypes = 6
+  val nBuiltInTypes = 7
   //TODO: Use Enum
   def getType       = UInt("b000") // Get a single beat of data
   def getBlockType  = UInt("b001") // Get a whole block of data
@@ -242,6 +243,7 @@ object Acquire {
   def putBlockType  = UInt("b011") // Put a whole block of data
   def putAtomicType = UInt("b100") // Perform an atomic memory op
   def prefetchType  = UInt("b101") // Prefetch a whole block of data
+  def immediateType = UInt("b110") // Send immediate only
   def typesWithData = Vec(putType, putBlockType, putAtomicType)
   def typesWithMultibeatData = Vec(putBlockType)
   def typesOnSubBlocks = Vec(putType, getType, putAtomicType)
@@ -482,6 +484,24 @@ object PutAtomic {
       addr_beat = addr_beat, 
       data = data,
       union = Cat(addr_byte, operand_size, atomic_opcode, Bool(true)))
+  }
+}
+
+object Immediate {
+  private val addrByteOff = MT_SZ + M_SZ + 1
+
+  def apply(
+      client_xact_id: UInt,
+      addr_block: UInt,
+      addr_beat: UInt,
+      addr_byte: UInt): Acquire = {
+    Acquire(
+      is_builtin_type = Bool(true),
+      a_type = Acquire.immediateType,
+      client_xact_id = client_xact_id,
+      addr_block = addr_block,
+      addr_beat = addr_beat,
+      union = Cat(addr_byte, UInt(0, addrByteOff)))
   }
 }
 
