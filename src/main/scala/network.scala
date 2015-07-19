@@ -76,6 +76,11 @@ class RemoteNetworkIO[T <: Data](dType: T) extends Bundle {
   override def clone = new RemoteNetworkIO(dType).asInstanceOf[this.type]
 }
 
+class RemoteNetworkCtrl extends Bundle {
+  val cur_addr = new RemoteAddress().asOutput
+  val switch_addr = Decoupled(new RemoteAddress).flip
+}
+
 object DecoupledLogicalNetworkIOWrapper {
   def apply[T <: Data](
       in: DecoupledIO[T],

@@ -1267,4 +1267,5 @@ class RemoteTileLinkIO extends TLBundle {
 class TileLinkNetworkIO extends TLBundle {
   val tx = new RemoteTileLinkIO
   val rx = new RemoteTileLinkIO().flip
+  val ctrl = new RemoteNetworkCtrl
 }
