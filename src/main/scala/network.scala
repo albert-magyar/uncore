@@ -79,6 +79,7 @@ class RemoteNetworkIO[T <: Data](dType: T) extends Bundle {
 class RemoteNetworkCtrl extends Bundle {
   val cur_addr = new RemoteAddress().asOutput
   val switch_addr = Decoupled(new RemoteAddress).flip
+  val route_error = Bits(INPUT, 2)
 }
 
 object DecoupledLogicalNetworkIOWrapper {
