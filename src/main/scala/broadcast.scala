@@ -40,7 +40,7 @@ class L2BroadcastHub extends ManagerCoherenceAgent
   trackerList.map(_.io.incoherent := io.incoherent.toBits)
 
   // Queue to store impending Put data
-  val sdq = Vec.fill(sdqDepth){ Reg(io.iacq().data) }
+  val sdq = Reg(Vec.fill(sdqDepth){io.iacq().data})
   val sdq_val = Reg(init=Bits(0, sdqDepth))
   val sdq_alloc_id = PriorityEncoder(~sdq_val)
   val sdq_rdy = !sdq_val.andR
@@ -69,7 +69,7 @@ class L2BroadcastHub extends ManagerCoherenceAgent
   val voluntary = io.irel().isVoluntary()
   val vwbdq_enq = io.inner.release.fire() && voluntary && io.irel().hasData()
   val (rel_data_cnt, rel_data_done) = Counter(vwbdq_enq, innerDataBeats) //TODO Zero width
-  val vwbdq = Vec.fill(innerDataBeats){ Reg(io.irel().data) } //TODO Assumes nReleaseTransactors == 1 
+  val vwbdq = Reg(Vec.fill(innerDataBeats){io.irel().data}) //TODO Assumes nReleaseTransactors == 1
   when(vwbdq_enq) { vwbdq(rel_data_cnt) := io.irel().data }
 
   // Handle releases, which might be voluntary and might have data
@@ -111,7 +111,7 @@ class L2BroadcastHub extends ManagerCoherenceAgent
   io.outer.acquire.bits.data := MuxLookup(outer_data_ptr.loc, io.irel().data, Array(
                                           inStoreQueue -> sdq(outer_data_ptr.idx),
                                           inVolWBQueue -> vwbdq(outer_data_ptr.idx)))
-  io.outer.acquire.bits.union := Cat(Fill(outer_arb.io.out.acquire.bits.union(1), io.outer.acquire.bits.tlWriteMaskBits),
+  io.outer.acquire.bits.union := Cat(Fill(io.outer.acquire.bits.tlWriteMaskBits, outer_arb.io.out.acquire.bits.union(1)),
                                    outer_arb.io.out.acquire.bits.union(0))
   io.outer <> outer_arb.io.out
 
@@ -131,7 +131,7 @@ class BroadcastVoluntaryReleaseTracker(trackerId: Int) extends BroadcastXactTrac
   val state = Reg(init=s_idle)
 
   val xact = Reg(Bundle(new ReleaseFromSrc, { case TLId => params(InnerTLId); case TLDataBits => 0 }))
-  val data_buffer = Vec.fill(innerDataBeats){ Reg(io.irel().data.clone) }
+  val data_buffer = Reg(Vec.fill(innerDataBeats){io.irel().data})
   val coh = ManagerMetadata.onReset
 
   val collect_irel_data = Reg(init=Bool(false))
@@ -210,7 +210,7 @@ class BroadcastAcquireTracker(trackerId: Int) extends BroadcastXactTracker {
   val state = Reg(init=s_idle)
 
   val xact = Reg(Bundle(new AcquireFromSrc, { case TLId => params(InnerTLId); case TLDataBits => 0 }))
-  val data_buffer = Vec.fill(innerDataBeats){ Reg(io.iacq().data.clone) }
+  val data_buffer = Reg(Vec.fill(innerDataBeats){io.iacq().data})
   val coh = ManagerMetadata.onReset
 
   assert(!(state != s_idle && xact.isBuiltInType() && 
@@ -221,11 +221,7 @@ class BroadcastAcquireTracker(trackerId: Int) extends BroadcastXactTracker {
   val release_count = Reg(init=UInt(0, width = log2Up(io.inner.tlNCachingClients+1)))
   val pending_probes = Reg(init=Bits(0, width = io.inner.tlNCachingClients))
   val curr_p_id = PriorityEncoder(pending_probes)
-  val full_sharers = coh.full()
-  val probe_self = io.inner.acquire.bits.requiresSelfProbe()
-  val mask_self_true = UInt(UInt(1) << io.inner.acquire.bits.client_id, width = io.inner.tlNCachingClients)
-  val mask_self_false = ~UInt(UInt(1) << io.inner.acquire.bits.client_id, width = io.inner.tlNCachingClients)
-  val mask_self = Mux(probe_self, full_sharers | mask_self_true, full_sharers & mask_self_false)
+  val mask_self = coh.full().bitSet(io.inner.acquire.bits.client_id, io.inner.acquire.bits.requiresSelfProbe())
   val mask_incoherent = mask_self & ~io.incoherent.toBits
 
   val collect_iacq_data = Reg(init=Bool(false))
