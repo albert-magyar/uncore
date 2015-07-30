@@ -16,7 +16,7 @@ class PhysicalHeader(n: Int) extends Bundle {
 
 class PhysicalNetworkIO[T <: Data](n: Int, dType: T) extends Bundle {
   val header = new PhysicalHeader(n)
-  val payload = dType
+  val payload = dType.cloneType
   override def cloneType = new PhysicalNetworkIO(n,dType).asInstanceOf[this.type]
 }
 
@@ -71,9 +71,9 @@ class RemoteHeader extends Bundle {
 
 class RemoteNetworkIO[T <: Data](dType: T) extends Bundle {
   val header = new RemoteHeader
-  val payload = dType.clone
+  val payload = dType.cloneType
   val last = Bool()
-  override def clone = new RemoteNetworkIO(dType).asInstanceOf[this.type]
+  override def cloneType = new RemoteNetworkIO(dType).asInstanceOf[this.type]
 }
 
 class RemoteNetworkCtrl extends Bundle {
