@@ -30,15 +30,17 @@ class L2BroadcastHub extends ManagerCoherenceAgent
   val internalDataBits = new DataQueueLocation().getWidth
   val inStoreQueue :: inVolWBQueue :: inClientReleaseQueue :: Nil = Enum(UInt(), nDataQueueLocations)
 
+  val trackerTLParams = params.alterPartial({
+    case TLDataBits => internalDataBits
+    case TLWriteMaskBits => innerWriteMaskBits
+  })
+
   // Create SHRs for outstanding transactions
   val trackerList =
     (0 until nReleaseTransactors).map(id =>
-      Module(new BroadcastVoluntaryReleaseTracker(id),
-        {case TLDataBits => internalDataBits})) ++
+      Module(new BroadcastVoluntaryReleaseTracker(id))(trackerTLParams)) ++
     (nReleaseTransactors until nTransactors).map(id =>
-      Module(new BroadcastAcquireTracker(id), {
-        case TLDataBits => internalDataBits
-        case TLWriteMaskBits => innerWriteMaskBits}))
+      Module(new BroadcastAcquireTracker(id))(trackerTLParams))
 
   // Propagate incoherence flags
   trackerList.map(_.io.incoherent := io.incoherent)
