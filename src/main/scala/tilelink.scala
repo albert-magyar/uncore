@@ -34,6 +34,8 @@ case object TLDataBits extends Field[Int]
 case object TLDataBeats extends Field[Int]
 /** Whether the underlying physical network preserved point-to-point ordering of messages */
 case object TLNetworkIsOrderedP2P extends Field[Boolean]
+/** Number of bits in write mask (usually one per byte in beat) */
+case object TLWriteMaskBits extends Field[Int]
 
 /** Utility trait for building Modules and Bundles that use TileLink parameters */
 trait TileLinkParameters extends UsesParameters {
@@ -53,7 +55,7 @@ trait TileLinkParameters extends UsesParameters {
   val tlDataBits = params(TLDataBits)
   val tlDataBytes = tlDataBits/8
   val tlDataBeats = params(TLDataBeats)
-  val tlWriteMaskBits = if(tlDataBits/8 < 1) 1 else tlDataBits/8
+  val tlWriteMaskBits = params(TLWriteMaskBits)
   val tlBeatAddrBits = log2Up(tlDataBeats)
   val tlByteAddrBits = log2Up(tlWriteMaskBits)
   val tlMemoryOpcodeBits = M_SZ
@@ -1277,6 +1279,7 @@ class NASTIMasterIOTileLinkIOConverter extends TLModule with NASTIParameters {
   val (tl_cnt_out, tl_wrap_out) =
     Counter((io.tl.acquire.fire() && acq_has_data) ||
               (io.tl.release.fire() && rel_has_data), tlDataBeats)
+  val is_subblock = io.tl.acquire.fire() && io.tl.acquire.bits.isSubBlockType()
   val tl_done_out = Reg(init=Bool(false))
 
   io.nasti.ar.bits.id := tag_out
@@ -1293,7 +1296,7 @@ class NASTIMasterIOTileLinkIOConverter extends TLModule with NASTIParameters {
   io.nasti.aw.bits := io.nasti.ar.bits
   io.nasti.w.bits.strb := Mux(data_from_rel, SInt(-1), io.tl.acquire.bits.wmask())
   io.nasti.w.bits.data := Mux(data_from_rel, io.tl.release.bits.data, io.tl.acquire.bits.data)
-  io.nasti.w.bits.last := tl_wrap_out
+  io.nasti.w.bits.last := tl_wrap_out || is_subblock
 
   when(!active_out){
     io.tl.release.ready := io.nasti.w.ready
@@ -1307,7 +1310,7 @@ class NASTIMasterIOTileLinkIOConverter extends TLModule with NASTIParameters {
       io.nasti.aw.valid := is_write
       io.nasti.ar.valid := !is_write
       cmd_sent_out := (!is_write && io.nasti.ar.ready) || (is_write && io.nasti.aw.ready)
-      tl_done_out := tl_wrap_out
+      tl_done_out := tl_wrap_out || is_subblock
       when(io.tl.release.valid) {
         data_from_rel := Bool(true)
         io.nasti.w.bits.data := io.tl.release.bits.data
@@ -1319,7 +1322,6 @@ class NASTIMasterIOTileLinkIOConverter extends TLModule with NASTIParameters {
         io.nasti.aw.bits.id := tag
         io.nasti.aw.bits.addr := addr
         io.nasti.aw.bits.len := UInt(tlDataBeats-1)
-        io.nasti.aw.bits.size := MT_Q
         tag_out := tag
         addr_out := addr
         has_data := rel_has_data
@@ -1336,7 +1338,6 @@ class NASTIMasterIOTileLinkIOConverter extends TLModule with NASTIParameters {
           io.nasti.aw.bits.addr := addr
           io.nasti.aw.bits.len := Mux(io.tl.acquire.bits.isBuiltInType(Acquire.putBlockType),
                                     UInt(tlDataBeats-1), UInt(0)) 
-          io.nasti.aw.bits.size := bytesToXSize(PopCount(io.tl.acquire.bits.wmask()))
         } .otherwise {
           io.nasti.ar.bits.id := tag
           io.nasti.ar.bits.addr := addr
