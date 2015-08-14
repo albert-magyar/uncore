@@ -4,7 +4,7 @@ package uncore
 
 import Chisel._
 import Chisel.ImplicitConversions._
-import junctions.{SMIIO}
+import junctions.{SMIIO, MMIOBase}
 
 case object HTIFWidth extends Field[Int]
 case object HTIFNSCR extends Field[Int]
@@ -230,7 +230,7 @@ class HTIF(pcr_RESET: Int) extends Module with HTIFParameters {
   for (i <- 0 until scr_rdata.size)
     scr_rdata(i) := io.scr.rdata(i)
   scr_rdata(0) := UInt(nCores)
-  scr_rdata(1) := UInt((BigInt(dataBits*dataBeats/8) << params(TLBlockAddrBits)) >> 20)
+  scr_rdata(1) := UInt(params(MMIOBase) >> 20)
 
   io.scr.wen := Bool(false)
   io.scr.wdata := pcr_wdata
