@@ -2,6 +2,7 @@
 
 package uncore
 import Chisel._
+import junctions._
 
 case object NReleaseTransactors extends Field[Int]
 case object NProbeTransactors extends Field[Int]
@@ -89,7 +90,15 @@ abstract class ManagerCoherenceAgent extends CoherenceAgent
   def incoherent = io.incoherent
 }
 
-class HierarchicalTLIO extends HasInnerTLIO with HasCachedOuterTLIO
+trait HasNASTIConfig {
+  val config = new NASTISlaveIO
+}
+
+trait HasFlippedNASTIConfig {
+  val config = (new NASTISlaveIO).flip
+}
+
+class HierarchicalTLIO extends HasInnerTLIO with HasCachedOuterTLIO with HasNASTIConfig
 
 abstract class HierarchicalCoherenceAgent extends CoherenceAgent {
   val io = new HierarchicalTLIO
