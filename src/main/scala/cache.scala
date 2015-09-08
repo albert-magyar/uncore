@@ -156,6 +156,7 @@ class MetadataArray[T <: Metadata](makeRstVal: () => T) extends CacheModule {
 
   val metabits = rstVal.getWidth
   val tag_arr = SeqMem(UInt(width = metabits*nWays), nSets)
+  tag_array.setMemName("Metadata_Array_Mem")
   when (rst || io.write.valid) {
     tag_arr.write(waddr, Fill(nWays, wdata), FillInterleaved(metabits, wmask))
   }
@@ -319,6 +320,7 @@ class L2DataArray(delay: Int) extends L2HellaCacheModule {
   val io = new L2DataRWIO().flip
 
   val array = SeqMem(Bits(width=rowBits), nWays*nSets*refillCycles)
+  array.setMemName("L2_Data_Array_Mem")
   val ren = !io.write.valid && io.read.valid
   val raddr = Cat(OHToUInt(io.read.bits.way_en), io.read.bits.addr_idx, io.read.bits.addr_beat)
   val waddr = Cat(OHToUInt(io.write.bits.way_en), io.write.bits.addr_idx, io.write.bits.addr_beat)
