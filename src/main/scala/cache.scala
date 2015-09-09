@@ -156,7 +156,7 @@ class MetadataArray[T <: Metadata](makeRstVal: () => T) extends CacheModule {
 
   val metabits = rstVal.getWidth
   val tag_arr = SeqMem(UInt(width = metabits*nWays), nSets)
-  tag_array.setMemName("Metadata_Array_Mem")
+  tag_arr.setMemName("Metadata_Array_Mem")
   when (rst || io.write.valid) {
     tag_arr.write(waddr, Fill(nWays, wdata), FillInterleaved(metabits, wmask))
   }
