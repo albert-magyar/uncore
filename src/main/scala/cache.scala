@@ -254,7 +254,7 @@ trait HasL2MetaWriteIO extends L2HellaCacheBundle {
   val write = Decoupled(new L2MetaWriteReq)
 }
 
-class L2MetaRWIO extends L2HellaCacheBundle with HasL2MetaReadIO with HasL2MetaWriteIO
+class L2MetaRWIO extends L2HellaCacheBundle with HasL2MetaReadIO with HasL2MetaWriteIO with HasFlippedNASTIConfig
 
 class L2MetadataArray extends L2HellaCacheModule {
   val io = new L2MetaRWIO().flip
@@ -372,6 +372,7 @@ class L2HellaCacheBank extends HierarchicalCoherenceAgent with L2HellaCacheParam
   io.incoherent <> tshrfile.io.incoherent
   tshrfile.io.meta <> meta.io
   tshrfile.io.data <> data.io
+  io.config <> meta.io.config
 }
 
 class TSHRFileIO extends HierarchicalTLIO {
