@@ -274,11 +274,39 @@ class L2MetadataArray extends L2HellaCacheModule {
   val s2_tag_match = s2_tag_match_way.orR
   val s2_hit_coh = Mux1H(s2_tag_match_way, wayMap((w: Int) => RegEnable(meta.io.resp(w).coh, s1_clk_en)))
 
+  class VLSAllocation {
+    private val base_tag = Reg(UInt(width = tagBits))
+    private val n_alloc_ways = Reg(init = UInt(0,width = wayBits))
+    private val req_tag = UInt(width = tagBits)
+    private val req_valid = Bool()
+    private val offset = req_tag - base_tag
+
+    def req(v: Bool, t: UInt): Unit = { req_tag := t; req_valid := v }
+    def active = req_valid && req_tag > base_tag && offset < n_alloc_ways
+    def way = offset(wayBits-1,0)
+    def adjustRandomReplace(replace_way: UInt) =
+      (replace_way % (UInt(nWays) - n_alloc_ways)) + n_alloc_ways
+  }
+
+  val allocation = new VLSAllocation()
+  allocation.req(io.read.valid, io.read.bits.tag)
+
+  // s1/s2 clock gating -- is it indicating idle or stalled?
+
+  val s1_is_vls = Reg(next = Mux(io.read.valid, allocation.active, Bool(false)))
+  val s1_vls_way = RegEnable(allocation.way, io.read.valid)
+
+  val s2_is_vls = Reg(next = Mux(s1_clk_en, s1_is_vls, Bool(false)))
+  val s2_vls_way = RegEnable(s1_vls_way, s1_clk_en)
+
   val replacer = params(Replacer)()
-  val s1_replaced_way_en = UIntToOH(replacer.way)
-  val s2_replaced_way_en = UIntToOH(RegEnable(replacer.way, s1_clk_en))
+  val replace_way = Mux(s1_is_vls, s1_vls_way, allocation.adjustRandomReplace(replacer.way))
+  val s1_replaced_way_en = UIntToOH(replace_way)
+  val s2_replaced_way_en = UIntToOH(RegEnable(replace_way, s1_clk_en))
   val s2_repl_meta = Mux1H(s2_replaced_way_en, wayMap((w: Int) => 
     RegEnable(meta.io.resp(w), s1_clk_en && s1_replaced_way_en(w))).toSeq)
+
+  // TODO: implement VLS random replacer
   when(!s2_tag_match) { replacer.miss }
 
   io.resp.valid := Reg(next = s1_clk_en)
