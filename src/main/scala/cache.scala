@@ -306,7 +306,6 @@ class L2MetadataArray extends L2HellaCacheModule {
   val s2_repl_meta = Mux1H(s2_replaced_way_en, wayMap((w: Int) => 
     RegEnable(meta.io.resp(w), s1_clk_en && s1_replaced_way_en(w))).toSeq)
 
-  // TODO: implement VLS random replacer
   when(!s2_tag_match) { replacer.miss }
 
   io.resp.valid := Reg(next = s1_clk_en)
